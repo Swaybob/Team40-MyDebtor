@@ -35,3 +35,12 @@ def create_school (instance, created, **kwargs):
 
         if instance.NIN == "":
             School.objects.create(user = instance)
+
+# @receiver(post_save, sender = settings.AUTH_USER_MODEL)
+# def create_user_school(sender, instance, created, **kwargs):
+#     if created:
+#         School.objects.create(user=instance)
+
+# @receiver(post_save, sender = settings.AUTH_USER_MODEL)
+# def save_user_school(sender, instance,**kwargs):
+#     instance.school.save()

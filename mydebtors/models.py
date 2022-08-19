@@ -41,7 +41,7 @@ GENDER = [
 
 class Student (models.Model):
 
-
+ 
     reg_number = models.CharField(max_length=255, default=reg_number_generator)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
