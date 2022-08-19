@@ -1,3 +1,4 @@
+import sched
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from core.models import School
@@ -58,13 +59,15 @@ class StudentSerializer (serializers.ModelSerializer):
         return student.school.name
     
     def get_sponsor_name(self, student):
+        if student.sponsor.first_name is not None:
+            return student.sponsor.first_name+" "+ student.sponsor.last_name
+        return None
 
-        return student.sponsor.first_name+" "+ student.sponsor.last_name
     
     def get_sponsor_NIN(self, student):
-
-        return student.sponsor.NIN
-
+        if student.sponsor.NIN is not None:
+            return student.sponsor.NIN     
+        return None
 
 
 class ClearedDebtorsSerializer(serializers.ModelSerializer):
@@ -95,10 +98,18 @@ class SponsorSerializer (serializers.ModelSerializer):
 
 
 
-class AddDebtSerializer (serializers.ModelSerializer):
+class AddDebtorSerializer (serializers.ModelSerializer):
     class Meta:
         model = Debt
-        
+        fields = ['session', 'term', 'total_fee', 'outstanding_fee', 'category','student']
+
+    def save(self, **kwargs):
+        user = self.context['user']
+        school = School.objects.get(user = user)
+
+        self.instance = Debt.objects.create(school = school, **self.validated_data)  
+
+        return self.instance      
 
 class DebtSerializer (serializers.ModelSerializer):
     id = serializers.UUIDField(read_only = True)

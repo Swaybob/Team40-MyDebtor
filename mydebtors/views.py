@@ -63,15 +63,31 @@ class SponsorViewSet (ModelViewSet):
     search_fields  = ['state']
 
 
-
-
-
 class DebtViewSet (ModelViewSet):
+
     queryset = Debt.objects.all()
     serializer_class = DebtSerializer
 
     def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return AddDebtorSerializer
         return DebtSerializer
+
+
+    def get_queryset(self):
+        if self.request.user.groups.filter(name ="School"):
+
+            school = School.objects.get(user = self.request.user)
+        
+            return Debt.objects.filter(school = school)
+        
+        return None
+
+
+
+    def get_serializer_context(self):
+        return {'user': self.request.user}
+
 
     # def get_permissions(self):
 
@@ -86,18 +102,12 @@ class DebtViewSet (ModelViewSet):
 
     #     return [permission() for permission in self.permission_classes]
     
-    def get_queryset(self):
-        school = School.objects.get(user = self.request.user)
-        student, created = Student.objects.get_or_create(school = school )
-        
-        return Debt.objects.filter(student = student)
-
 
 class BioDataViewSet (ModelViewSet):
     http_method_names=['get', 'head', 'options']
     queryset = Student.objects.all().select_related('sponsor').prefetch_related('debts')
     serializer_class = BioDataSerializer
-    permission_classes = [IsAuthenticated | IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
 
 class ComplaintViewSet (ModelViewSet):
@@ -105,7 +115,9 @@ class ComplaintViewSet (ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        return Complaint.objects.filter(user = self.request.user)
+        if self.request.user.is_authenticated:
+            return Complaint.objects.filter(user = self.request.user)
+        return None
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -113,20 +125,22 @@ class ComplaintViewSet (ModelViewSet):
         return ComplaintSerializer
 
     def get_serializer_context(self):
-        sponsor = Sponsor.objects.filter(email = self.request.user.email).first()
+        if self.request.user.groups.filter(name ="Parent"):
 
-        student, created = Student.objects.get_or_create(sponsor__id = sponsor.id )
-        debt = Debt.objects.get(student_id = student.id)
-        context={
-                    'debt': debt,
-                    'user' : self.request.user,
-                    'school': student.school
-                    
-                    }
-        return context
+            sponsor = Sponsor.objects.filter(email = self.request.user.email).first()
 
+            student = Student.objects.filter(sponsor__id = sponsor.id ).first()
+            
+            if student:
+                debt = Debt.objects.get(student_id = student.id)
 
-
+            context={
+                        'debt': debt,
+                        'user' : self.request.user,
+                        'school': student.school
+                        
+                        }
+            return context
 
 
 
